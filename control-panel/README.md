@@ -49,7 +49,14 @@ Cards (each a 240×240 JPEG in the clock's `/photo/`):
 **โชว์บนจอทันที** (show on screen now) uploads fresh copies of the cards ticked
 "โชว์บนจอ", then pins them: only the Photo theme on, theme rotation off, only
 those card photos enabled (they alternate at the photo interval), and the
-current theme switched to Photo. If one card fails, the others are still shown. The previous
+current theme switched to Photo. If one card fails, the others are still shown.
+
+With **รวมหน้านาฬิกาในรอบ** (include the clock face) ticked, the clock face(s)
+that were on before pinning (Classic if none) stay enabled next to Photo, and
+the theme interval is set to the chosen time, so the screen alternates clock
+face ↔ cards. The clock times theme switches and photo switches separately, so
+the cards page should last at least cards × photo interval; the page warns
+when it does not. The previous
 themes, theme interval, photo toggles and current theme are saved to
 `.state/display-snapshot.json` first. **กลับเป็นแบบเดิม** (restore) puts them back
 and deletes the snapshot. If the upload fails, nothing on the clock is changed.

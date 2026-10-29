@@ -129,8 +129,11 @@ const routes = {
 
   'GET /api/display': async () => pin.status(),
 
-  'POST /api/display/show': async ({ cards: ids }) => {
+  'POST /api/display/show': async ({ cards: ids, clockSeconds = null }) => {
     if (!Array.isArray(ids) || ids.length === 0) throw new HttpError(400, 'Pick at least one card to show')
+    if (clockSeconds !== null && (clockSeconds === 0 || !THEME_INTERVALS.includes(clockSeconds))) {
+      throw new HttpError(400, `clockSeconds must be one of ${THEME_INTERVALS.filter(Boolean)}`)
+    }
     const chosen = [...new Set(ids)].map((id) => [id, cardById(id)])
     // Upload fresh data first: if every card fails, the display setup is left untouched.
     const results = await Promise.all(
@@ -138,7 +141,7 @@ const routes = {
     )
     const shown = results.filter((r) => r.ok)
     if (shown.length === 0) throw new HttpError(502, results.map((r) => `${r.id}: ${r.error}`).join('; '))
-    await pin.pin(shown.map((r) => cards[r.id].file))
+    await pin.pin(shown.map((r) => cards[r.id].file), { clockSeconds })
     return {
       display: await pin.status(),
       cards: cardStatuses(),

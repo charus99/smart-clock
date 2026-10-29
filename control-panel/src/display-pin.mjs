@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
+const CLASSIC_THEME_ID = 0
 const PHOTO_THEME_ID = 2
 const NO_ROTATION = 0
 
@@ -54,21 +55,30 @@ export function createDisplayPin(clock) {
       return { pinned: snapshot !== null, since: snapshot?.takenAt ?? null }
     },
 
-    /** Call after the cards have been uploaded. `cardFiles`: photo names to keep on screen. */
-    async pin(cardFiles) {
+    /**
+     * Call after the cards have been uploaded. `cardFiles`: photo names to keep on screen.
+     * With `clockSeconds`, the user's usual clock face stays in the loop too: the clock
+     * switches between it and the Photo theme every `clockSeconds`.
+     */
+    async pin(cardFiles, { clockSeconds = null } = {}) {
       const { files } = await clock.photos()
       const missing = cardFiles.filter((name) => !files.some((file) => file.name === name))
       if (missing.length) throw new Error(`Not on the clock yet: ${missing.join(', ')}`)
 
       // Pressing twice must not overwrite the original setup with the pinned one.
-      if (!(await readSnapshot())) {
+      let snapshot = await readSnapshot()
+      if (!snapshot) {
+        snapshot = await takeSnapshot()
         await mkdir(fileURLToPath(new URL('../.state/', import.meta.url)), { recursive: true })
-        await writeFile(SNAPSHOT_PATH, JSON.stringify(await takeSnapshot(), null, 2))
+        await writeFile(SNAPSHOT_PATH, JSON.stringify(snapshot, null, 2))
       }
 
+      // "Usual clock face" = the non-Photo themes that were on before pinning (Classic if none).
+      const usualFaces = snapshot.themes.filter((t) => t.enabled && t.id !== PHOTO_THEME_ID).map((t) => t.id)
+      const clockFaces = clockSeconds ? (usualFaces.length ? usualFaces : [CLASSIC_THEME_ID]) : []
       const { themes } = await clock.themes()
-      await applyThemes(themes.map(({ id }) => ({ id, enabled: id === PHOTO_THEME_ID })))
-      await clock.setThemeInterval(NO_ROTATION)
+      await applyThemes(themes.map(({ id }) => ({ id, enabled: id === PHOTO_THEME_ID || clockFaces.includes(id) })))
+      await clock.setThemeInterval(clockSeconds ?? NO_ROTATION)
       // Enable the cards before disabling the rest, so the photo loop is never empty.
       await applyPhotos(cardFiles.map((name) => ({ name, enabled: true })))
       await applyPhotos(files.filter((f) => !cardFiles.includes(f.name)).map(({ name }) => ({ name, enabled: false })))

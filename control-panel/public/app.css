@@ -140,6 +140,8 @@ button:disabled { opacity: 0.5; cursor: progress; }
 
 .stack { display: grid; gap: 6px; padding: 6px 0; }
 .row.narrow { max-width: 420px; }
+.clock-loop { margin-top: 12px; }
+.clock-loop .include { min-height: 32px; color: var(--text); }
 
 select, input[type="text"] {
   font: inherit;

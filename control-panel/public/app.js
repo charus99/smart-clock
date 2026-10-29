@@ -121,6 +121,7 @@ function renderPhotos({ files, total, used, interval }) {
   })))
   // Same clock setting shown in two places (photos, and cards on screen).
   $$('[data-photo-interval]').forEach((el) => (el.value = String(interval)))
+  renderClockLoop()
   const percent = total ? Math.round((used / total) * 100) : 0
   $('#storage-bar').style.width = `${percent}%`
   $('#storage-text').textContent = `ใช้ไป ${formatBytes(used)} จาก ${formatBytes(total)} (เหลือ ${formatBytes(total - used)})`
@@ -210,28 +211,71 @@ async function setCardAuto(id) {
   }
 }
 
-// Which cards "show now" includes: a per-browser preference, so localStorage is enough.
+// What "show now" includes: a per-browser preference, so localStorage is enough.
 function loadIncluded() {
   try {
     const saved = JSON.parse(localStorage.getItem(INCLUDE_KEY))
-    if (Array.isArray(saved)) CARD_IDS.forEach((id) => (part(id, 'include').checked = saved.includes(id)))
+    // Older versions saved just the array of card ids.
+    const cards = Array.isArray(saved) ? saved : saved?.cards
+    if (Array.isArray(cards)) CARD_IDS.forEach((id) => (part(id, 'include').checked = cards.includes(id)))
+    if (typeof saved?.clock === 'boolean') $('#include-clock').checked = saved.clock
+    if (saved?.clockSeconds) $('#clock-seconds').value = String(saved.clockSeconds)
   } catch {
-    // storage blocked or corrupt: keep the defaults (all checked)
+    // storage blocked or corrupt: keep the defaults
   }
+  renderClockLoop()
 }
 
 const includedCards = () => CARD_IDS.filter((id) => part(id, 'include').checked)
+const clockSeconds = () => ($('#include-clock').checked ? Number($('#clock-seconds').value) : null)
 
 function saveIncluded() {
+  renderClockLoop()
   try {
-    localStorage.setItem(INCLUDE_KEY, JSON.stringify(includedCards()))
+    localStorage.setItem(INCLUDE_KEY, JSON.stringify({
+      cards: includedCards(),
+      clock: $('#include-clock').checked,
+      clockSeconds: Number($('#clock-seconds').value)
+    }))
   } catch {
     // not critical
   }
 }
 
+/** The clock times the theme switch and the photo switch separately; warn when cards would be skipped. */
+function renderClockLoop() {
+  const on = $('#include-clock').checked
+  $('#clock-seconds-row').hidden = !on
+  const hint = $('#clock-loop-hint')
+  hint.hidden = !on
+  if (!on) return
+  const cardCount = includedCards().length
+  const photoSeconds = Number($('[data-photo-interval]').value)
+  const needed = cardCount * photoSeconds
+  const short = Number($('#clock-seconds').value) < needed
+  hint.textContent = short
+    ? `การ์ด ${cardCount} ใบ × สลับทุก ${photoSeconds} วินาที = ${needed} วินาที แต่หน้าการ์ดอยู่แค่ ${$('#clock-seconds').value} วินาที บางการ์ดอาจไม่ได้ขึ้นทุกรอบ`
+    : 'หน้าการ์ดอยู่นานพอให้ทุกการ์ดขึ้นครบในแต่ละรอบ'
+  hint.classList.toggle('warn', short)
+}
+
 // --- pin cards on screen ---
-function renderDisplay({ pinned, since }) {
+let pinned = false
+
+/** While cards are pinned, loop settings apply at once instead of waiting for the next "show". */
+async function applyClockLoop() {
+  saveIncluded()
+  if (!pinned) return
+  if ($('#include-clock').checked) {
+    await save('/api/theme-interval', { seconds: clockSeconds() }, 'ตั้งเวลาสลับหน้านาฬิกาแล้ว')
+  } else {
+    toast('กด “อัปเดตการ์ดบนจอ” เพื่อเอาหน้านาฬิกาออกจากรอบ')
+  }
+}
+
+function renderDisplay(display) {
+  pinned = display.pinned
+  const { since } = display
   $('#display-restore').hidden = !pinned
   $('#display-show').textContent = pinned ? 'อัปเดตการ์ดบนจอ' : 'โชว์บนจอทันที'
   const status = $('#display-status')
@@ -247,7 +291,7 @@ function showOnScreen(button) {
   if (cards.length === 0) return toast('เลือกการ์ดที่จะโชว์อย่างน้อย 1 ใบ', true)
   return busy(button, async () => {
     try {
-      const result = await api('/api/display/show', { cards })
+      const result = await api('/api/display/show', { cards, clockSeconds: clockSeconds() })
       renderCards(result.cards)
       renderDisplay(result.display)
       if (result.failed.length) {
@@ -303,6 +347,7 @@ $('#theme-interval').addEventListener('change', (e) => save('/api/theme-interval
 for (const el of $$('[data-photo-interval]')) {
   el.addEventListener('change', async () => {
     $$('[data-photo-interval]').forEach((other) => (other.value = el.value))
+    renderClockLoop()
     await save('/api/photo-interval', { seconds: Number(el.value) }, 'ตั้งเวลาสลับแล้ว')
   })
 }
@@ -331,6 +376,15 @@ for (const id of CARD_IDS) {
   })
   part(id, 'include').addEventListener('change', saveIncluded)
 }
+$('#include-clock').addEventListener('change', () => {
+  // Adding the clock face also needs its theme turned on, which only "show" does.
+  if ($('#include-clock').checked && pinned) {
+    saveIncluded()
+    return toast('กด “อัปเดตการ์ดบนจอ” เพื่อเพิ่มหน้านาฬิกาเข้ารอบ')
+  }
+  applyClockLoop()
+})
+$('#clock-seconds').addEventListener('change', applyClockLoop)
 $('#display-show').addEventListener('click', (e) => showOnScreen(e.currentTarget))
 $('#display-restore').addEventListener('click', (e) => restoreScreen(e.currentTarget))
 

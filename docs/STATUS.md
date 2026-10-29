@@ -43,6 +43,9 @@ settings, upload files, or flash firmware.
 - BTC price card (`btc_price.jpg`, Binance BTC/USDT, 24h change + chart).
   "Show on screen now" pins the ticked cards, which alternate at the photo
   interval. `BTC_AUTO` / `BTC_INTERVAL_MINUTES` in `.env`.
+  Optional "include the clock face": the usual clock theme alternates with the
+  cards at the theme interval. Exact on-screen order/timing when the firmware
+  re-enters the Photo theme is not verified.
   `mini-display-claude-ai-usage/src/device.mjs` got an optional file-name
   parameter (default unchanged) so the BTC card can reuse the uploader.
 - `control-panel/Smart Clock Panel.cmd`: portable launcher window

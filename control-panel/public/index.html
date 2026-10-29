@@ -22,6 +22,22 @@
       </div>
       <p id="display-status" class="hint" hidden></p>
 
+      <div class="clock-loop">
+        <label class="include"><input type="checkbox" id="include-clock"> รวมหน้านาฬิกาในรอบ</label>
+        <label class="row narrow" id="clock-seconds-row">
+          <span>สลับหน้านาฬิกา ↔ การ์ดทุก</span>
+          <select id="clock-seconds">
+            <option value="10">10 วินาที</option>
+            <option value="15">15 วินาที</option>
+            <option value="30">30 วินาที</option>
+            <option value="60">1 นาที</option>
+            <option value="300">5 นาที</option>
+            <option value="1800">30 นาที</option>
+          </select>
+        </label>
+        <p id="clock-loop-hint" class="hint"></p>
+      </div>
+
       <div class="cards-grid">
         <article class="card-panel" data-card="claude">
           <div class="card-panel-head">
@@ -88,7 +104,7 @@
         </article>
       </div>
       <label class="row narrow">
-        <span>สลับการ์ดบนจอทุก</span>
+        <span>สลับระหว่างการ์ดทุก</span>
         <select data-photo-interval>
           <option value="5">5 วินาที</option>
           <option value="10">10 วินาที</option>
