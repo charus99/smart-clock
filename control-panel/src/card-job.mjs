@@ -1,12 +1,9 @@
-import { buildCard, pushCard } from '../../mini-display-claude-ai-usage/src/app.mjs'
-
-const UPLOAD_DIR = '/photo/'
-
 /**
- * Builds and uploads the Claude usage card, on demand or on a timer.
+ * Builds and uploads one card, on demand or on a timer.
+ * build({ mock }) -> { jpeg, sourceName }; upload(jpeg) throws on failure.
  * Runs are queued so a manual click never overlaps a timed upload.
  */
-export function createCardJob({ uploadUrl, intervalMinutes }) {
+export function createCardJob({ build, upload, intervalMinutes }) {
   let auto = false
   let minutes = intervalMinutes
   let timer = null
@@ -18,9 +15,9 @@ export function createCardJob({ uploadUrl, intervalMinutes }) {
   async function execute({ mock, push }) {
     const at = new Date().toISOString()
     try {
-      const { jpeg, sourceName } = await buildCard(null, { mock })
+      const { jpeg, sourceName } = await build({ mock })
       lastJpeg = jpeg
-      if (push) await pushCard({ deviceUrl: uploadUrl, uploadDir: UPLOAD_DIR }, jpeg)
+      if (push) await upload(jpeg)
       lastRun = { at, ok: true, source: sourceName, pushed: push }
     } catch (error) {
       lastRun = { at, ok: false, pushed: false, error: error.message }

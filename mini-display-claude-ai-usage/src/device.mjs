@@ -5,14 +5,14 @@ import { connect } from 'node:net'
  * Content-Length header, which fetch and node:http reject. Only status line parsed.
  * dir passed raw (not URL-encoded).
  */
-export function uploadToDevice(deviceUrl, uploadDir, jpeg) {
+export function uploadToDevice(deviceUrl, uploadDir, jpeg, fileName = 'claude_usage.jpg') {
   return new Promise((resolve, reject) => {
     const url = new URL(deviceUrl)
     const boundary = `----UploadBoundary${Date.now().toString(16)}`
     const body = Buffer.concat([
       Buffer.from(
         `--${boundary}\r\n` +
-          `Content-Disposition: form-data; name="file"; filename="claude_usage.jpg"\r\n` +
+          `Content-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
           `Content-Type: image/jpeg\r\n\r\n`
       ),
       jpeg,

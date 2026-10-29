@@ -1,5 +1,7 @@
-const PHOTO_THEME_ID = 2
+const CARD_IDS = ['claude', 'btc']
+const CARD_NAMES = { claude: 'Claude', btc: 'BTC' }
 const CARD_POLL_MS = 30_000
+const INCLUDE_KEY = 'smart-clock-panel:show-cards'
 
 const $ = (selector) => document.querySelector(selector)
 const $$ = (selector) => [...document.querySelectorAll(selector)]
@@ -108,8 +110,6 @@ function renderThemes({ interval, themes }) {
     }
   })))
   $('#theme-interval').value = String(interval)
-  const photoTheme = themes.find((theme) => theme.id === PHOTO_THEME_ID)
-  $('#card-photo-warning').hidden = Boolean(photoTheme?.enabled)
 }
 
 function renderPhotos({ files, total, used, interval }) {
@@ -119,7 +119,8 @@ function renderPhotos({ files, total, used, interval }) {
     extra: formatBytes(file.size),
     onChange: (enabled) => save('/api/photo', { name: file.name, enabled }, `${file.name}: ${enabled ? 'เปิด' : 'ปิด'}`)
   })))
-  $('#photo-interval').value = String(interval)
+  // Same clock setting shown in two places (photos, and cards on screen).
+  $$('[data-photo-interval]').forEach((el) => (el.value = String(interval)))
   const percent = total ? Math.round((used / total) * 100) : 0
   $('#storage-bar').style.width = `${percent}%`
   $('#storage-text').textContent = `ใช้ไป ${formatBytes(used)} จาก ${formatBytes(total)} (เหลือ ${formatBytes(total - used)})`
@@ -141,11 +142,14 @@ async function loadState() {
   }
 }
 
-// --- Claude usage card ---
-let shownRunAt = null
-function renderCard(status) {
-  $('#card-auto').checked = status.auto
-  $('#card-interval').value = String(status.intervalMinutes)
+// --- cards (Claude usage, BTC price) ---
+const part = (id, role) => document.querySelector(`[data-card="${id}"] [data-role="${role}"]`)
+const cardButtons = () => [...$$('[data-card] button'), $('#display-show'), $('#display-restore')]
+const shownRunAt = {}
+
+function renderCard(id, status) {
+  part(id, 'auto').checked = status.auto
+  part(id, 'interval').value = String(status.intervalMinutes)
   const run = status.lastRun
   let text = 'ยังไม่เคยส่ง'
   if (run) {
@@ -155,27 +159,27 @@ function renderCard(status) {
     text = `${formatTime(run.at)} · ${what}`
   }
   if (status.auto && status.nextRunAt) text += ` · รอบถัดไป ${formatTime(status.nextRunAt)}`
-  $('#card-status').textContent = text
-  $('#card-status').classList.toggle('warn', Boolean(run && !run.ok))
-  if (status.hasImage && run?.at !== shownRunAt) {
-    shownRunAt = run?.at ?? null
-    const img = $('#card-image')
-    img.src = `/api/card/image?t=${Date.now()}`
+  part(id, 'status').textContent = text
+  part(id, 'status').classList.toggle('warn', Boolean(run && !run.ok))
+  if (status.hasImage && run?.at !== shownRunAt[id]) {
+    shownRunAt[id] = run?.at ?? null
+    const img = part(id, 'image')
+    img.src = `/api/cards/image?card=${id}&t=${Date.now()}`
     img.hidden = false
-    $('#card-empty').hidden = true
+    part(id, 'empty').hidden = true
   }
 }
 
-async function runCard(button, body) {
-  const buttons = [$('#card-mock'), $('#card-push')]
+const renderCards = (statuses) => CARD_IDS.forEach((id) => statuses[id] && renderCard(id, statuses[id]))
+
+/** Disables every card button while one action runs, so clicks never overlap. */
+async function busy(button, action) {
+  const buttons = cardButtons()
   buttons.forEach((b) => (b.disabled = true))
   const original = button.textContent
   button.textContent = 'กำลังทำ…'
   try {
-    const status = await api('/api/card/run', body)
-    renderCard(status)
-    if (status.result.ok) toast(body.push ? 'ส่งการ์ดขึ้นนาฬิกาแล้ว' : 'สร้างตัวอย่างแล้ว')
-    else toast(status.result.error, true)
+    await action()
   } catch (error) {
     toast(error.message, true)
   } finally {
@@ -184,52 +188,91 @@ async function runCard(button, body) {
   }
 }
 
-async function setCardAuto() {
+function runCard(id, button, body) {
+  return busy(button, async () => {
+    const status = await api('/api/cards/run', { card: id, ...body })
+    renderCard(id, status)
+    if (status.result.ok) toast(body.push ? `ส่งการ์ด ${CARD_NAMES[id]} ขึ้นนาฬิกาแล้ว` : 'สร้างตัวอย่างแล้ว')
+    else toast(status.result.error, true)
+  })
+}
+
+async function setCardAuto(id) {
   try {
-    renderCard(await api('/api/card/auto', {
-      enabled: $('#card-auto').checked,
-      intervalMinutes: Number($('#card-interval').value)
+    renderCard(id, await api('/api/cards/auto', {
+      card: id,
+      enabled: part(id, 'auto').checked,
+      intervalMinutes: Number(part(id, 'interval').value)
     }))
-    toast($('#card-auto').checked ? 'เปิดอัปเดตอัตโนมัติ' : 'ปิดอัปเดตอัตโนมัติ')
+    toast(`${CARD_NAMES[id]}: ${part(id, 'auto').checked ? 'เปิด' : 'ปิด'}อัปเดตอัตโนมัติ`)
   } catch (error) {
     toast(error.message, true)
   }
 }
 
-// --- pin the card on screen ---
+// Which cards "show now" includes: a per-browser preference, so localStorage is enough.
+function loadIncluded() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INCLUDE_KEY))
+    if (Array.isArray(saved)) CARD_IDS.forEach((id) => (part(id, 'include').checked = saved.includes(id)))
+  } catch {
+    // storage blocked or corrupt: keep the defaults (all checked)
+  }
+}
+
+const includedCards = () => CARD_IDS.filter((id) => part(id, 'include').checked)
+
+function saveIncluded() {
+  try {
+    localStorage.setItem(INCLUDE_KEY, JSON.stringify(includedCards()))
+  } catch {
+    // not critical
+  }
+}
+
+// --- pin cards on screen ---
 function renderDisplay({ pinned, since }) {
   $('#display-restore').hidden = !pinned
   $('#display-show').textContent = pinned ? 'อัปเดตการ์ดบนจอ' : 'โชว์บนจอทันที'
   const status = $('#display-status')
   status.hidden = !pinned
+  const anyAuto = CARD_IDS.some((id) => part(id, 'auto').checked)
   status.textContent = pinned
-    ? `ล็อกการ์ดไว้บนจอตั้งแต่ ${formatTime(since)} · ธีม/รูปอื่นปิดชั่วคราว${$('#card-auto').checked ? '' : ' · เปิด “อัปเดตอัตโนมัติ” เพื่อให้ตัวเลขสด'}`
+    ? `ล็อกการ์ดไว้บนจอตั้งแต่ ${formatTime(since)} · ธีม/รูปอื่นปิดชั่วคราว${anyAuto ? '' : ' · เปิด “อัปเดตอัตโนมัติ” เพื่อให้ตัวเลขสด'}`
     : ''
 }
 
-async function displayAction(button, path, okMessage) {
-  const buttons = [$('#display-show'), $('#display-restore'), $('#card-mock'), $('#card-push')]
-  buttons.forEach((b) => (b.disabled = true))
-  const original = button.textContent
-  button.textContent = 'กำลังทำ…'
-  try {
-    const result = await api(path, {})
-    if (result.card) renderCard(result.card)
-    button.textContent = original
-    renderDisplay(result.display)
-    toast(okMessage)
-  } catch (error) {
-    button.textContent = original
-    toast(error.message, true)
-  } finally {
-    buttons.forEach((b) => (b.disabled = false))
-    await loadState()
-  }
+function showOnScreen(button) {
+  const cards = includedCards()
+  if (cards.length === 0) return toast('เลือกการ์ดที่จะโชว์อย่างน้อย 1 ใบ', true)
+  return busy(button, async () => {
+    try {
+      const result = await api('/api/display/show', { cards })
+      renderCards(result.cards)
+      renderDisplay(result.display)
+      if (result.failed.length) {
+        toast(`ขึ้นจอแล้ว ยกเว้น ${result.failed.map((f) => `${CARD_NAMES[f.id]} (${f.error})`).join(', ')}`, true)
+      } else toast('การ์ดขึ้นจอแล้ว')
+    } finally {
+      await loadState()
+    }
+  })
 }
 
-async function pollCard() {
+function restoreScreen(button) {
+  return busy(button, async () => {
+    try {
+      renderDisplay((await api('/api/display/restore', {})).display)
+      toast('คืนค่าการแสดงผลเดิมแล้ว')
+    } finally {
+      await loadState()
+    }
+  })
+}
+
+async function pollCards() {
   try {
-    renderCard(await api('/api/card'))
+    renderCards(await api('/api/cards'))
   } catch {
     // panel server restarting; next poll retries
   }
@@ -257,7 +300,12 @@ for (const el of $$('[data-color]')) {
 }
 
 $('#theme-interval').addEventListener('change', (e) => save('/api/theme-interval', { seconds: Number(e.target.value) }))
-$('#photo-interval').addEventListener('change', (e) => save('/api/photo-interval', { seconds: Number(e.target.value) }))
+for (const el of $$('[data-photo-interval]')) {
+  el.addEventListener('change', async () => {
+    $$('[data-photo-interval]').forEach((other) => (other.value = el.value))
+    await save('/api/photo-interval', { seconds: Number(el.value) }, 'ตั้งเวลาสลับแล้ว')
+  })
+}
 
 $('#city-form').addEventListener('submit', async (e) => {
   e.preventDefault()
@@ -273,16 +321,21 @@ $('#city-form').addEventListener('submit', async (e) => {
   }
 })
 
-$('#card-mock').addEventListener('click', (e) => runCard(e.currentTarget, { mock: true, push: false }))
-$('#card-push').addEventListener('click', (e) => runCard(e.currentTarget, { mock: false, push: true }))
-$('#display-show').addEventListener('click', (e) => displayAction(e.currentTarget, '/api/display/show', 'การ์ดขึ้นจอแล้ว'))
-$('#display-restore').addEventListener('click', (e) => displayAction(e.currentTarget, '/api/display/restore', 'คืนค่าการแสดงผลเดิมแล้ว'))
-$('#card-auto').addEventListener('change', setCardAuto)
-$('#card-interval').addEventListener('change', () => {
-  if ($('#card-auto').checked) setCardAuto()
-})
+for (const id of CARD_IDS) {
+  const preview = part(id, 'preview')
+  preview.addEventListener('click', () => runCard(id, preview, { mock: preview.dataset.mock === 'true', push: false }))
+  part(id, 'push').addEventListener('click', (e) => runCard(id, e.currentTarget, { mock: false, push: true }))
+  part(id, 'auto').addEventListener('change', () => setCardAuto(id))
+  part(id, 'interval').addEventListener('change', () => {
+    if (part(id, 'auto').checked) setCardAuto(id)
+  })
+  part(id, 'include').addEventListener('change', saveIncluded)
+}
+$('#display-show').addEventListener('click', (e) => showOnScreen(e.currentTarget))
+$('#display-restore').addEventListener('click', (e) => restoreScreen(e.currentTarget))
 
+loadIncluded()
 loadState()
-pollCard()
+pollCards()
 api('/api/display').then(renderDisplay).catch((error) => toast(error.message, true))
-setInterval(pollCard, CARD_POLL_MS)
+setInterval(pollCards, CARD_POLL_MS)

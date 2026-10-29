@@ -14,42 +14,91 @@
   </header>
 
   <main>
-    <section class="card" id="claude-card">
-      <h2>Claude Usage</h2>
-      <div class="claude-layout">
-        <div class="preview">
-          <img id="card-image" alt="ตัวอย่างการ์ดที่ส่งขึ้นนาฬิกา" width="240" height="240" hidden>
-          <div id="card-empty" class="preview-empty">ยังไม่มีการ์ด<br>กด “ดูตัวอย่าง”</div>
-        </div>
-        <div class="claude-controls">
-          <div class="buttons">
-            <button type="button" id="display-show" class="primary-big">โชว์บนจอทันที</button>
-            <button type="button" id="display-restore" class="secondary" hidden>กลับเป็นแบบเดิม</button>
-          </div>
-          <p id="display-status" class="hint" hidden></p>
-          <div class="buttons">
-            <button type="button" id="card-mock" class="secondary">ดูตัวอย่าง (ข้อมูลจำลอง)</button>
-            <button type="button" id="card-push" class="secondary">ส่งข้อมูลจริงขึ้นนาฬิกา</button>
-          </div>
-          <label class="row">
-            <span>อัปเดตอัตโนมัติ</span>
-            <input type="checkbox" class="switch" id="card-auto">
-          </label>
-          <label class="row">
-            <span>ทุก</span>
-            <select id="card-interval">
-              <option value="1">1 นาที</option>
-              <option value="5">5 นาที</option>
-              <option value="10">10 นาที</option>
-              <option value="15">15 นาที</option>
-              <option value="30">30 นาที</option>
-              <option value="60">1 ชั่วโมง</option>
-            </select>
-          </label>
-          <p id="card-status" class="hint">ยังไม่เคยส่ง</p>
-          <p id="card-photo-warning" class="hint warn" hidden>ธีม Photo ปิดอยู่ การ์ดจะไม่ขึ้นจอ</p>
-        </div>
+    <section class="card" id="cards-section">
+      <h2>การ์ดบนจอ</h2>
+      <div class="buttons">
+        <button type="button" id="display-show" class="primary-big">โชว์บนจอทันที</button>
+        <button type="button" id="display-restore" class="secondary" hidden>กลับเป็นแบบเดิม</button>
       </div>
+      <p id="display-status" class="hint" hidden></p>
+
+      <div class="cards-grid">
+        <article class="card-panel" data-card="claude">
+          <div class="card-panel-head">
+            <h3>Claude Usage</h3>
+            <label class="include"><input type="checkbox" data-role="include" checked> โชว์บนจอ</label>
+          </div>
+          <div class="card-layout">
+            <div class="preview">
+              <img data-role="image" alt="ตัวอย่างการ์ด Claude Usage" width="240" height="240" hidden>
+              <div data-role="empty" class="preview-empty">ยังไม่มีการ์ด<br>กด “ดูตัวอย่าง”</div>
+            </div>
+            <div class="card-controls">
+              <div class="buttons">
+                <button type="button" data-role="preview" data-mock="true" class="secondary">ดูตัวอย่าง (ข้อมูลจำลอง)</button>
+                <button type="button" data-role="push" class="secondary">ส่งข้อมูลจริงขึ้นนาฬิกา</button>
+              </div>
+              <label class="row"><span>อัปเดตอัตโนมัติ</span><input type="checkbox" class="switch" data-role="auto"></label>
+              <label class="row">
+                <span>ทุก</span>
+                <select data-role="interval">
+                  <option value="1">1 นาที</option>
+                  <option value="5">5 นาที</option>
+                  <option value="10">10 นาที</option>
+                  <option value="15">15 นาที</option>
+                  <option value="30">30 นาที</option>
+                  <option value="60">1 ชั่วโมง</option>
+                </select>
+              </label>
+              <p data-role="status" class="hint">ยังไม่เคยส่ง</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card-panel" data-card="btc">
+          <div class="card-panel-head">
+            <h3>Bitcoin (USD)</h3>
+            <label class="include"><input type="checkbox" data-role="include" checked> โชว์บนจอ</label>
+          </div>
+          <div class="card-layout">
+            <div class="preview">
+              <img data-role="image" alt="ตัวอย่างการ์ดราคา Bitcoin" width="240" height="240" hidden>
+              <div data-role="empty" class="preview-empty">ยังไม่มีการ์ด<br>กด “ดูตัวอย่าง”</div>
+            </div>
+            <div class="card-controls">
+              <div class="buttons">
+                <button type="button" data-role="preview" data-mock="false" class="secondary">ดูตัวอย่าง</button>
+                <button type="button" data-role="push" class="secondary">ส่งขึ้นนาฬิกา</button>
+              </div>
+              <label class="row"><span>อัปเดตอัตโนมัติ</span><input type="checkbox" class="switch" data-role="auto"></label>
+              <label class="row">
+                <span>ทุก</span>
+                <select data-role="interval">
+                  <option value="1">1 นาที</option>
+                  <option value="2">2 นาที</option>
+                  <option value="5">5 นาที</option>
+                  <option value="10">10 นาที</option>
+                  <option value="15">15 นาที</option>
+                  <option value="30">30 นาที</option>
+                </select>
+              </label>
+              <p data-role="status" class="hint">ยังไม่เคยส่ง</p>
+            </div>
+          </div>
+        </article>
+      </div>
+      <label class="row narrow">
+        <span>สลับการ์ดบนจอทุก</span>
+        <select data-photo-interval>
+          <option value="5">5 วินาที</option>
+          <option value="10">10 วินาที</option>
+          <option value="15">15 วินาที</option>
+          <option value="30">30 วินาที</option>
+          <option value="60">1 นาที</option>
+          <option value="180">3 นาที</option>
+          <option value="300">5 นาที</option>
+        </select>
+      </label>
     </section>
 
     <section class="card">
@@ -75,7 +124,7 @@
       <ul id="photos" class="checklist"></ul>
       <label class="row">
         <span>สลับรูปทุก</span>
-        <select id="photo-interval">
+        <select data-photo-interval>
           <option value="5">5 วินาที</option>
           <option value="10">10 วินาที</option>
           <option value="15">15 วินาที</option>

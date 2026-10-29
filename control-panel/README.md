@@ -29,7 +29,9 @@ only kills the process on `PORT` when it is this panel's `node server.mjs`.
 | `PORT` | Panel port | `8787` |
 | `BIND_HOST` | Interface to listen on | `127.0.0.1` |
 | `CARD_INTERVAL_MINUTES` | Initial auto-update interval for the usage card | `5` |
-| `CARD_AUTO` | `true` turns card auto-update on when the server starts | `false` |
+| `CARD_AUTO` | `true` turns Claude card auto-update on when the server starts | `false` |
+| `BTC_INTERVAL_MINUTES` | Initial auto-update interval for the BTC card | `1` |
+| `BTC_AUTO` | `true` turns BTC card auto-update on when the server starts | `false` |
 
 ## What it can change
 
@@ -37,9 +39,17 @@ Themes in the loop and their interval, photos in the loop and their interval,
 °C / 12-hour / Mile / time sync, date format, GIF, brightness, night mode,
 the three clock colours, and the city (checked against OpenWeatherMap first).
 
-**โชว์บนจอทันที** (show on screen now) uploads a fresh card with real usage data,
-then pins it: only the Photo theme on, theme rotation off, only
-`claude_usage.jpg` enabled, and the current theme switched to Photo. The previous
+Cards (each a 240×240 JPEG in the clock's `/photo/`):
+
+| Card | File | Data |
+|---|---|---|
+| Claude Usage | `claude_usage.jpg` | Claude Code 5-hour and weekly usage (`mini-display-claude-ai-usage`) |
+| Bitcoin | `btc_price.jpg` | BTC/USDT price, 24h change, 24h chart of 15-minute closes, from Binance's public API (no key) |
+
+**โชว์บนจอทันที** (show on screen now) uploads fresh copies of the cards ticked
+"โชว์บนจอ", then pins them: only the Photo theme on, theme rotation off, only
+those card photos enabled (they alternate at the photo interval), and the
+current theme switched to Photo. If one card fails, the others are still shown. The previous
 themes, theme interval, photo toggles and current theme are saved to
 `.state/display-snapshot.json` first. **กลับเป็นแบบเดิม** (restore) puts them back
 and deletes the snapshot. If the upload fails, nothing on the clock is changed.
@@ -67,6 +77,9 @@ update, restart, and deleting photos. Use the clock's own page for those.
 - Auto-update state lives in memory: after a restart it goes back to `CARD_AUTO`.
 - The card only shows on the clock when the Photo theme is enabled.
 - A pinned card is a still image: turn on auto-update to keep the numbers fresh.
+- Every auto-update rewrites the card file in the clock's flash storage. Short
+  intervals (1 minute) mean many more flash writes; how well the firmware
+  spreads them (wear levelling) is unknown.
 - Switching the current theme uses `/api/set?key=theme`, which the stock page's
   script supports but its UI never calls. Verified that the clock accepts it and
   `/config` reflects the change; not verified what the screen does.

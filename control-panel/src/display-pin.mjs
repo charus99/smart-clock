@@ -3,14 +3,12 @@ import { fileURLToPath } from 'node:url'
 
 const PHOTO_THEME_ID = 2
 const NO_ROTATION = 0
-// File name the mini-display uploader always writes (mini-display-claude-ai-usage/src/device.mjs).
-export const CARD_FILE = 'claude_usage.jpg'
 
 const SNAPSHOT_PATH = fileURLToPath(new URL('../.state/display-snapshot.json', import.meta.url))
 
 /**
- * Pins the Claude card on screen (Photo theme only, no rotation, only the card photo)
- * and restores the previous display setup afterwards.
+ * Pins card photos on screen (Photo theme only, no theme rotation, only those photos,
+ * which then alternate at the photo interval) and restores the previous display setup.
  * The snapshot is kept on disk so "restore" still works after the panel restarts.
  */
 export function createDisplayPin(clock) {
@@ -56,10 +54,11 @@ export function createDisplayPin(clock) {
       return { pinned: snapshot !== null, since: snapshot?.takenAt ?? null }
     },
 
-    /** Call after the card has been uploaded. */
-    async pin() {
+    /** Call after the cards have been uploaded. `cardFiles`: photo names to keep on screen. */
+    async pin(cardFiles) {
       const { files } = await clock.photos()
-      if (!files.some((file) => file.name === CARD_FILE)) throw new Error(`${CARD_FILE} is not on the clock yet`)
+      const missing = cardFiles.filter((name) => !files.some((file) => file.name === name))
+      if (missing.length) throw new Error(`Not on the clock yet: ${missing.join(', ')}`)
 
       // Pressing twice must not overwrite the original setup with the pinned one.
       if (!(await readSnapshot())) {
@@ -70,7 +69,9 @@ export function createDisplayPin(clock) {
       const { themes } = await clock.themes()
       await applyThemes(themes.map(({ id }) => ({ id, enabled: id === PHOTO_THEME_ID })))
       await clock.setThemeInterval(NO_ROTATION)
-      await applyPhotos(files.map(({ name }) => ({ name, enabled: name === CARD_FILE })))
+      // Enable the cards before disabling the rest, so the photo loop is never empty.
+      await applyPhotos(cardFiles.map((name) => ({ name, enabled: true })))
+      await applyPhotos(files.filter((f) => !cardFiles.includes(f.name)).map(({ name }) => ({ name, enabled: false })))
       await clock.set('theme', String(PHOTO_THEME_ID))
     },
 
@@ -80,6 +81,10 @@ export function createDisplayPin(clock) {
       await applyThemes(snapshot.themes)
       await clock.setThemeInterval(snapshot.themeInterval)
       await applyPhotos(snapshot.photos)
+      // Cards first uploaded while pinned did not exist before: leave them out of the loop.
+      const { files } = await clock.photos()
+      const added = files.filter((f) => !snapshot.photos.some((p) => p.name === f.name))
+      await applyPhotos(added.map(({ name }) => ({ name, enabled: false })))
       await clock.set('theme', String(snapshot.theme))
       await rm(SNAPSHOT_PATH)
     }

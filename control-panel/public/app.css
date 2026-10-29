@@ -62,12 +62,38 @@ main {
   padding: 16px;
 }
 
-#claude-card { grid-column: 1 / -1; }
+#cards-section { grid-column: 1 / -1; }
 
-.claude-layout {
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 16px;
+  margin: 12px 0 4px;
+}
+
+.card-panel {
+  background: color-mix(in srgb, var(--surface-2) 45%, var(--surface));
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.card-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+h3 { margin: 0; font-size: 16px; }
+
+.include { display: flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; }
+.include input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+.card-layout {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 16px;
   align-items: flex-start;
 }
 
@@ -85,7 +111,7 @@ main {
 .preview img { display: block; width: 240px; height: 240px; }
 .preview-empty { color: var(--muted); text-align: center; }
 
-.claude-controls { flex: 1 1 260px; min-width: 0; }
+.card-controls { flex: 1 1 200px; min-width: 0; }
 
 .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 
@@ -113,6 +139,7 @@ button:disabled { opacity: 0.5; cursor: progress; }
 }
 
 .stack { display: grid; gap: 6px; padding: 6px 0; }
+.row.narrow { max-width: 420px; }
 
 select, input[type="text"] {
   font: inherit;

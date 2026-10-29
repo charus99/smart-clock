@@ -32,13 +32,19 @@ settings, upload files, or flash firmware.
 
 - `mini-display-claude-ai-usage/`: vendored copy of
   github.com/Datayolk/mini-display-claude-ai-usage (MIT). Renders a 240×240
-  Claude Code usage card and uploads it to the clock. Local change: the card's
-  footer shows the date as well as the time (`updated 29 Oct 20:44`).
+  Claude Code usage card and uploads it to the clock. Local changes: the card's
+  footer shows the date as well as the time (`updated 29 Oct 20:44`), and
+  `uploadToDevice` takes an optional file name.
 - `control-panel/`: custom settings page on the PC (`npm start`,
   http://127.0.0.1:8787). Themes, photos, display, brightness/night mode,
   colours, city, Claude card preview/upload/auto-update, and
   "show on screen now" / "restore". Confirmed working on the real clock by the
   user on 2026-10-29.
+- BTC price card (`btc_price.jpg`, Binance BTC/USDT, 24h change + chart).
+  "Show on screen now" pins the ticked cards, which alternate at the photo
+  interval. `BTC_AUTO` / `BTC_INTERVAL_MINUTES` in `.env`.
+  `mini-display-claude-ai-usage/src/device.mjs` got an optional file-name
+  parameter (default unchanged) so the BTC card can reuse the uploader.
 - `control-panel/Smart Clock Panel.cmd`: portable launcher window
   (PowerShell + WinForms) with start/stop, status, open-web and log.
   `CARD_AUTO=true` in `.env` turns card auto-update on at server start.
@@ -60,5 +66,8 @@ settings, upload files, or flash firmware.
   it goes back to `.env` values.
 - The panel is not started at Windows login (no Task Scheduler entry yet).
 - No automated tests.
+- Flash wear from frequent card uploads is unquantified (firmware file system
+  and its wear levelling are unknown). BTC at 1-minute intervals is ~1,440
+  writes/day.
 - `docs/REQUIREMENTS.md` and `docs/TECH-STACK.md` referenced by CLAUDE.md do
   not exist yet.

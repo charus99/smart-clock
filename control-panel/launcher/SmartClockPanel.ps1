@@ -178,6 +178,17 @@ function Update-Log {
   }
 }
 
+function Set-CardLine($Label, [string]$Name, $Status) {
+  if (-not $Status) { $Label.Text = ''; return }
+  $auto = if ($Status.auto) { "อัตโนมัติทุก $($Status.intervalMinutes) นาที" } else { 'อัตโนมัติ: ปิด' }
+  $run = $Status.lastRun
+  $last = if (-not $run) { 'ยังไม่เคยส่ง' }
+    elseif ($run.ok) { "ล่าสุด $(Format-Time $run.at) $(if ($run.pushed) { 'ส่งแล้ว' } else { 'ตัวอย่าง' })" }
+    else { "ล่าสุด $(Format-Time $run.at) ล้มเหลว: $($run.error)" }
+  $Label.Text = "${Name}: $auto · $last"
+  $Label.ForeColor = if ($run -and -not $run.ok) { $red } else { $muted }
+}
+
 function Update-Status {
   $process = Get-ServerProcess
   $running = $process -and (Test-IsOurServer $process)
@@ -186,15 +197,11 @@ function Update-Status {
     $script:starting = $false
     $dot.ForeColor = $green
     $statusLabel.Text = "กำลังทำงาน · $PanelUrl"
-    $card = Get-PanelJson '/api/card'
+    $cards = Get-PanelJson '/api/cards'
     $display = Get-PanelJson '/api/display'
-    if ($card) {
-      $cardLabel.Text = if ($card.auto) { "อัปเดตการ์ดอัตโนมัติ: เปิด (ทุก $($card.intervalMinutes) นาที)" } else { 'อัปเดตการ์ดอัตโนมัติ: ปิด' }
-      $run = $card.lastRun
-      $lastLabel.Text = if (-not $run) { 'การ์ดล่าสุด: ยังไม่เคยส่ง' }
-        elseif ($run.ok) { "การ์ดล่าสุด: $(Format-Time $run.at) · $(if ($run.pushed) { 'ส่งขึ้นนาฬิกาแล้ว' } else { 'ตัวอย่าง' })" }
-        else { "การ์ดล่าสุด: $(Format-Time $run.at) · ล้มเหลว: $($run.error)" }
-      $lastLabel.ForeColor = if ($run -and -not $run.ok) { $red } else { $muted }
+    if ($cards) {
+      Set-CardLine $cardLabel 'Claude' $cards.claude
+      Set-CardLine $lastLabel 'BTC' $cards.btc
     }
     if ($display) {
       $pinLabel.Text = if ($display.pinned) { "บนจอ: ล็อกการ์ดไว้ตั้งแต่ $(Format-Time $display.since)" } else { 'บนจอ: แสดงตามปกติ' }

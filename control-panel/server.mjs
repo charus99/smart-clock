@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { loadConfig } from './src/config.mjs'
 import { createClock } from './src/clock.mjs'
-import { createCardJob } from './src/card-job.mjs'
+import { createCards } from './src/cards/index.mjs'
 import { createDisplayPin } from './src/display-pin.mjs'
 import { SETTINGS, THEME_INTERVALS, PHOTO_INTERVALS } from './src/settings.mjs'
 
@@ -28,8 +28,19 @@ try {
   process.exit(1)
 }
 const clock = createClock(config.clockHost)
-const card = createCardJob({ uploadUrl: clock.uploadUrl, intervalMinutes: config.cardIntervalMinutes })
+const cards = createCards({
+  uploadUrl: clock.uploadUrl,
+  claudeIntervalMinutes: config.cardIntervalMinutes,
+  btcIntervalMinutes: config.btcIntervalMinutes
+})
 const pin = createDisplayPin(clock)
+
+function cardById(id) {
+  if (typeof id !== 'string' || !Object.hasOwn(cards, id)) throw new HttpError(400, `Unknown card: ${id}`)
+  return cards[id]
+}
+
+const cardStatuses = () => Object.fromEntries(Object.entries(cards).map(([id, card]) => [id, card.job.status()]))
 
 const routes = {
   'GET /api/state': async () => {
@@ -98,21 +109,41 @@ const routes = {
     return { ok: true }
   },
 
-  'GET /api/card': async () => card.status(),
+  'GET /api/cards': async () => cardStatuses(),
 
-  'POST /api/card/run': async ({ mock = false, push = true }) => {
-    const result = await card.run({ mock: Boolean(mock), push: Boolean(push) })
-    return { ...card.status(), result }
+  'POST /api/cards/run': async ({ card: id, mock = false, push = true }) => {
+    const card = cardById(id)
+    const result = await card.job.run({ mock: Boolean(mock), push: Boolean(push) })
+    return { ...card.job.status(), result }
+  },
+
+  'POST /api/cards/auto': async ({ card: id, enabled, intervalMinutes }) => {
+    const card = cardById(id)
+    try {
+      card.job.setAuto(enabled, intervalMinutes)
+    } catch (error) {
+      throw new HttpError(400, error.message)
+    }
+    return card.job.status()
   },
 
   'GET /api/display': async () => pin.status(),
 
-  'POST /api/display/show': async () => {
-    // Upload fresh data first: if that fails, the display setup is left untouched.
-    const result = await card.run({ mock: false, push: true })
-    if (!result.ok) throw new HttpError(502, result.error)
-    await pin.pin()
-    return { display: await pin.status(), card: card.status() }
+  'POST /api/display/show': async ({ cards: ids }) => {
+    if (!Array.isArray(ids) || ids.length === 0) throw new HttpError(400, 'Pick at least one card to show')
+    const chosen = [...new Set(ids)].map((id) => [id, cardById(id)])
+    // Upload fresh data first: if every card fails, the display setup is left untouched.
+    const results = await Promise.all(
+      chosen.map(async ([id, card]) => ({ id, ...(await card.job.run({ mock: false, push: true })) }))
+    )
+    const shown = results.filter((r) => r.ok)
+    if (shown.length === 0) throw new HttpError(502, results.map((r) => `${r.id}: ${r.error}`).join('; '))
+    await pin.pin(shown.map((r) => cards[r.id].file))
+    return {
+      display: await pin.status(),
+      cards: cardStatuses(),
+      failed: results.filter((r) => !r.ok).map(({ id, error }) => ({ id, error }))
+    }
   },
 
   'POST /api/display/restore': async () => {
@@ -123,15 +154,6 @@ const routes = {
       throw error
     }
     return { display: await pin.status() }
-  },
-
-  'POST /api/card/auto': async ({ enabled, intervalMinutes }) => {
-    try {
-      card.setAuto(enabled, intervalMinutes)
-    } catch (error) {
-      throw new HttpError(400, error.message)
-    }
-    return card.status()
   }
 }
 
@@ -165,14 +187,14 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
 const stamp = () => new Date().toLocaleTimeString('en-GB', { hour12: false })
 
 const server = createServer(async (req, res) => {
-  const { pathname } = new URL(req.url, 'http://panel')
+  const { pathname, searchParams } = new URL(req.url, 'http://panel')
   try {
     if (req.method === 'GET' && Object.hasOwn(STATIC, pathname)) {
       const [file, type] = STATIC[pathname]
       return send(res, 200, await readFile(new URL(`./public/${file}`, import.meta.url)), type)
     }
-    if (req.method === 'GET' && pathname === '/api/card/image') {
-      const jpeg = card.image()
+    if (req.method === 'GET' && pathname === '/api/cards/image') {
+      const jpeg = cardById(searchParams.get('card')).job.image()
       return jpeg ? send(res, 200, jpeg, 'image/jpeg') : send(res, 404, { error: 'No card rendered yet' })
     }
     const route = routes[`${req.method} ${pathname}`]
@@ -190,7 +212,11 @@ server.listen(config.port, config.bindHost, () => {
   console.log(`Smart Clock panel: http://${config.bindHost === '0.0.0.0' ? 'localhost' : config.bindHost}:${config.port}`)
   console.log(`Clock: ${config.clockHost}. Ctrl+C to stop.`)
   if (config.cardAuto) {
-    card.setAuto(true)
-    console.log(`Card auto-update on, every ${config.cardIntervalMinutes} min`)
+    cards.claude.job.setAuto(true)
+    console.log(`Claude card auto-update on, every ${config.cardIntervalMinutes} min`)
+  }
+  if (config.btcAuto) {
+    cards.btc.job.setAuto(true)
+    console.log(`BTC card auto-update on, every ${config.btcIntervalMinutes} min`)
   }
 })
