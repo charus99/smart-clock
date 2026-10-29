@@ -1,0 +1,18 @@
+{
+  "name": "mini-display-claude-ai-usage",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "upload": "node upload.mjs",
+    "usage": "node usage.mjs",
+    "usage:upload": "node usage.mjs --upload",
+    "watch": "node watch.mjs"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
