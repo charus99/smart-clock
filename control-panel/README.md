@@ -6,6 +6,20 @@ uploads the Claude Code usage card using `../mini-display-claude-ai-usage`.
 
 No firmware is flashed or changed.
 
+## Set up on a new PC
+
+1. Get the project: `git clone https://github.com/charus99/smart-clock.git`, or
+   Download ZIP from GitHub and extract it.
+2. Double-click **`setup.cmd`** in the project root. It installs Node.js LTS with
+   winget if needed (asks first), runs `npm ci` for the card renderer, writes
+   `control-panel/.env` (asks for the clock IP and whether to auto-update), checks
+   that the clock answers, and can add a desktop shortcut. Safe to run again.
+3. Open **Smart Clock Panel** and press start.
+
+The Claude card needs Claude Code installed and logged in on that PC; the BTC
+card works without it. Run the panel on one PC at a time, and "restore" only
+works on the PC that pinned the cards (the snapshot is local).
+
 ## Run
 
 Requires Node.js 22+ and `npm ci` already run in `../mini-display-claude-ai-usage`

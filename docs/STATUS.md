@@ -51,6 +51,9 @@ settings, upload files, or flash firmware.
 - `control-panel/Smart Clock Panel.cmd`: portable launcher window
   (PowerShell + WinForms) with start/stop, status, open-web and log.
   `CARD_AUTO=true` in `.env` turns card auto-update on at server start.
+- `setup.cmd` (project root): one-time setup on another PC (Node.js via winget,
+  `npm ci`, `.env`, clock check, desktop shortcut). Tested unattended on a clean
+  copy of the project; the desktop-shortcut step was not run in that test.
 
 ## Decided
 
