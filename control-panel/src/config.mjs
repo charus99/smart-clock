@@ -20,6 +20,7 @@ export function loadConfig() {
     port,
     // Loopback by default: the panel can change clock settings and has no login.
     bindHost: env.BIND_HOST ?? '127.0.0.1',
-    cardIntervalMinutes
+    cardIntervalMinutes,
+    cardAuto: env.CARD_AUTO === 'true' // start auto-update without a click (uses the Claude token)
   })
 }

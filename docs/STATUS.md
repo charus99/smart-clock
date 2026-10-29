@@ -39,6 +39,9 @@ settings, upload files, or flash firmware.
   colours, city, Claude card preview/upload/auto-update, and
   "show on screen now" / "restore". Confirmed working on the real clock by the
   user on 2026-10-29.
+- `control-panel/Smart Clock Panel.cmd`: portable launcher window
+  (PowerShell + WinForms) with start/stop, status, open-web and log.
+  `CARD_AUTO=true` in `.env` turns card auto-update on at server start.
 
 ## Decided
 
@@ -53,8 +56,9 @@ settings, upload files, or flash firmware.
 
 ## Outstanding
 
-- Auto-update state is in memory only; it resets when the panel restarts.
-- The panel is not started automatically (no Task Scheduler entry yet).
+- Auto-update interval changed in the web page is not saved; after a restart
+  it goes back to `.env` values.
+- The panel is not started at Windows login (no Task Scheduler entry yet).
 - No automated tests.
 - `docs/REQUIREMENTS.md` and `docs/TECH-STACK.md` referenced by CLAUDE.md do
   not exist yet.

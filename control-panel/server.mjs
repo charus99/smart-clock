@@ -189,4 +189,8 @@ const server = createServer(async (req, res) => {
 server.listen(config.port, config.bindHost, () => {
   console.log(`Smart Clock panel: http://${config.bindHost === '0.0.0.0' ? 'localhost' : config.bindHost}:${config.port}`)
   console.log(`Clock: ${config.clockHost}. Ctrl+C to stop.`)
+  if (config.cardAuto) {
+    card.setAuto(true)
+    console.log(`Card auto-update on, every ${config.cardIntervalMinutes} min`)
+  }
 })

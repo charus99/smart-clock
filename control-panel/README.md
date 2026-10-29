@@ -16,12 +16,20 @@ cp .env.example .env    # set CLOCK_HOST to the clock's IP
 npm start               # open http://127.0.0.1:8787
 ```
 
+Or double-click **`Smart Clock Panel.cmd`**: a small window with start/stop
+buttons, server status, the card's last update, a button to open the web page,
+and the server log (`.state/server.log`). It uses only Windows PowerShell 5.1,
+so the whole folder can be copied elsewhere. The server keeps running in the
+background if you close the window and answer "No" (ไม่) to stopping it. Stop
+only kills the process on `PORT` when it is this panel's `node server.mjs`.
+
 | Variable | Purpose | Default |
 |---|---|---|
 | `CLOCK_HOST` | Clock IP or hostname | required |
 | `PORT` | Panel port | `8787` |
 | `BIND_HOST` | Interface to listen on | `127.0.0.1` |
 | `CARD_INTERVAL_MINUTES` | Initial auto-update interval for the usage card | `5` |
+| `CARD_AUTO` | `true` turns card auto-update on when the server starts | `false` |
 
 ## What it can change
 
@@ -56,7 +64,7 @@ update, restart, and deleting photos. Use the clock's own page for those.
 
 ## Limits
 
-- Auto-update state lives in memory: it is off again after the panel restarts.
+- Auto-update state lives in memory: after a restart it goes back to `CARD_AUTO`.
 - The card only shows on the clock when the Photo theme is enabled.
 - A pinned card is a still image: turn on auto-update to keep the numbers fresh.
 - Switching the current theme uses `/api/set?key=theme`, which the stock page's
