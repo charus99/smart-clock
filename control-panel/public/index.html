@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Clock Panel</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Smart Clock</h1>
+    <span id="connection" class="pill">กำลังเชื่อมต่อ…</span>
+  </header>
+
+  <main>
+    <section class="card" id="claude-card">
+      <h2>Claude Usage</h2>
+      <div class="claude-layout">
+        <div class="preview">
+          <img id="card-image" alt="ตัวอย่างการ์ดที่ส่งขึ้นนาฬิกา" width="240" height="240" hidden>
+          <div id="card-empty" class="preview-empty">ยังไม่มีการ์ด<br>กด “ดูตัวอย่าง”</div>
+        </div>
+        <div class="claude-controls">
+          <div class="buttons">
+            <button type="button" id="display-show" class="primary-big">โชว์บนจอทันที</button>
+            <button type="button" id="display-restore" class="secondary" hidden>กลับเป็นแบบเดิม</button>
+          </div>
+          <p id="display-status" class="hint" hidden></p>
+          <div class="buttons">
+            <button type="button" id="card-mock" class="secondary">ดูตัวอย่าง (ข้อมูลจำลอง)</button>
+            <button type="button" id="card-push" class="secondary">ส่งข้อมูลจริงขึ้นนาฬิกา</button>
+          </div>
+          <label class="row">
+            <span>อัปเดตอัตโนมัติ</span>
+            <input type="checkbox" class="switch" id="card-auto">
+          </label>
+          <label class="row">
+            <span>ทุก</span>
+            <select id="card-interval">
+              <option value="1">1 นาที</option>
+              <option value="5">5 นาที</option>
+              <option value="10">10 นาที</option>
+              <option value="15">15 นาที</option>
+              <option value="30">30 นาที</option>
+              <option value="60">1 ชั่วโมง</option>
+            </select>
+          </label>
+          <p id="card-status" class="hint">ยังไม่เคยส่ง</p>
+          <p id="card-photo-warning" class="hint warn" hidden>ธีม Photo ปิดอยู่ การ์ดจะไม่ขึ้นจอ</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>ธีมที่วนแสดง</h2>
+      <ul id="themes" class="checklist"></ul>
+      <label class="row">
+        <span>สลับธีมทุก</span>
+        <select id="theme-interval">
+          <option value="0">ไม่สลับ</option>
+          <option value="5">5 วินาที</option>
+          <option value="10">10 วินาที</option>
+          <option value="15">15 วินาที</option>
+          <option value="30">30 วินาที</option>
+          <option value="60">1 นาที</option>
+          <option value="300">5 นาที</option>
+          <option value="1800">30 นาที</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>รูปภาพ</h2>
+      <ul id="photos" class="checklist"></ul>
+      <label class="row">
+        <span>สลับรูปทุก</span>
+        <select id="photo-interval">
+          <option value="5">5 วินาที</option>
+          <option value="10">10 วินาที</option>
+          <option value="15">15 วินาที</option>
+          <option value="30">30 วินาที</option>
+          <option value="60">1 นาที</option>
+          <option value="180">3 นาที</option>
+          <option value="300">5 นาที</option>
+        </select>
+      </label>
+      <div class="meter"><div id="storage-bar"></div></div>
+      <p id="storage-text" class="hint"></p>
+    </section>
+
+    <section class="card">
+      <h2>การแสดงผล</h2>
+      <label class="row"><span>อุณหภูมิเป็น °C</span><input type="checkbox" class="switch" data-setting="celsius"></label>
+      <label class="row"><span>นาฬิกา 12 ชั่วโมง</span><input type="checkbox" class="switch" data-setting="hour12"></label>
+      <label class="row"><span>Mile Display</span><input type="checkbox" class="switch" data-setting="mile"></label>
+      <label class="row"><span>ใช้เวลาจากมือถือ/PC</span><input type="checkbox" class="switch" data-setting="sync"></label>
+      <label class="row">
+        <span>รูปแบบวันที่</span>
+        <select data-setting="timeformat">
+          <option value="0">MM/DD/YYYY</option>
+          <option value="1">DD/MM/YYYY</option>
+          <option value="2">YYYY/MM/DD</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>GIF</span>
+        <select data-setting="gifnum">
+          <option value="1">spaceman</option>
+          <option value="2">divergent</option>
+          <option value="3">bird</option>
+          <option value="4">wave</option>
+          <option value="5">Customization</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>ความสว่างและโหมดกลางคืน</h2>
+      <label class="stack">
+        <span>ความสว่าง <output data-for="brightness"></output></span>
+        <input type="range" min="2" max="99" data-setting="brightness">
+      </label>
+      <label class="row"><span>โหมดกลางคืน</span><input type="checkbox" class="switch" data-setting="nightmode"></label>
+      <label class="row">
+        <span>เริ่ม</span>
+        <select data-setting="starttime">
+          <option value="18">18:00</option><option value="19">19:00</option><option value="20">20:00</option>
+          <option value="21">21:00</option><option value="22">22:00</option><option value="23">23:00</option>
+        </select>
+      </label>
+      <label class="row">
+        <span>สิ้นสุด</span>
+        <select data-setting="stoptime">
+          <option value="5">05:00</option><option value="6">06:00</option><option value="7">07:00</option>
+          <option value="8">08:00</option><option value="9">09:00</option><option value="10">10:00</option>
+          <option value="11">11:00</option><option value="12">12:00</option>
+        </select>
+      </label>
+      <label class="stack">
+        <span>ความสว่างกลางคืน <output data-for="nightbrightness"></output></span>
+        <input type="range" min="2" max="99" data-setting="nightbrightness">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>สีนาฬิกา</h2>
+      <div class="colors">
+        <label><input type="color" data-color="color1"><span>สี 1</span></label>
+        <label><input type="color" data-color="color2"><span>สี 2</span></label>
+        <label><input type="color" data-color="color3"><span>สี 3</span></label>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>เมือง</h2>
+      <form id="city-form" class="inline-form">
+        <input id="city" type="text" maxlength="80" placeholder="เช่น Bangkok,TH" autocomplete="off">
+        <button type="submit">บันทึก</button>
+      </form>
+      <p class="hint">ตรวจชื่อกับ OpenWeatherMap ก่อนบันทึก</p>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
