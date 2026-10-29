@@ -1,6 +1,8 @@
 export const hhmm = (date) => date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
 
-export const headerDate = (date) => date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()
+export const dayMonth = (date) => date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+
+export const headerDate =(date) => date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()
 
 /** "in 25 min", "in 1h 20m", "now". */
 export function countdown(ms) {

@@ -32,7 +32,8 @@ settings, upload files, or flash firmware.
 
 - `mini-display-claude-ai-usage/`: vendored copy of
   github.com/Datayolk/mini-display-claude-ai-usage (MIT). Renders a 240×240
-  Claude Code usage card and uploads it to the clock. Unmodified.
+  Claude Code usage card and uploads it to the clock. Local change: the card's
+  footer shows the date as well as the time (`updated 29 Oct 20:44`).
 - `control-panel/`: custom settings page on the PC (`npm start`,
   http://127.0.0.1:8787). Themes, photos, display, brightness/night mode,
   colours, city, Claude card preview/upload/auto-update, and
